@@ -9,7 +9,7 @@
 #   Python (Hasn't been tested on any version lower than 3.62) (https://www.python.org/)
 #   Python Requests (May require pip to install on windows, setup is easiest on linux in my opinion.) (http://docs.python-requests.org/en/master/user/install/))
 #   Colorama (pip install colorama) https://pypi.python.org/pypi/colorama
-# 
+#
 # Instructions:
 #   1. Open Spotify (I used the desktop client) and create a new playlist with all the music you want to download. I went into "Songs" (Spotify>Songs) and selected everything with Ctrl+A then dragged the selection to the playlist in the sidebar.
 #   2. Open your web browser and go to https://rawgit.com/watsonbox/exportify/master/exportify.html. Log in with your Spotify account and click export on your desired playlist.
@@ -24,10 +24,10 @@
 #   11. Open terminal/command-line and navigate to the folder where all.csv and inporter.py are located.
 #   12. Run this file. (importer.py)
 #   13. Wait. It may take a really long time to complete the script, depending on your music library size.
-######################################################'
+# '
 
-host = "" # eg. myserver.com:8181, localhost:8181
-apikey = "" # your api key from headphones
+host = "localhost:32769"  # eg. myserver.com:8181, localhost:8181
+apikey = "283755c3bfb392067c3aceaefacb8d4b"  # your api key from headphones
 
 
 import csv
@@ -36,8 +36,10 @@ import requests
 import time
 import pip
 
+
 def install(colorama):
     pip.main(['install', package])
+
 
 import colorama
 colorama.init()
@@ -46,62 +48,57 @@ error = "\033[1;31m"
 success = "\033[1;32m"
 warning = "\033[1;33m"
 
+failedSongs = []
+
 if host == "" or apikey == "":
     # print (error + "Error. Enter Host and API key in this file (import.py).")
     input()
 
 else:
 
-    print (start + "Caution: This may take a very long time to complete, Depending on your music library size.")
-    print (start + "Warning: This script does not support individual songs. It downloads the entire album that each of your songs are a part of.")
-    print (start + "Waiting...")
-    time.sleep(5)
-    print (start + "Starting in...")
-    time.sleep(1)
-    print(start + "5..")
-    time.sleep(1)
-    print(start + "4..")
-    time.sleep(1)
-    print(start + "3..")
-    time.sleep(1)
-    print(start + "2..")
-    time.sleep(1)
-    print(start + "1..")
-    time.sleep(1)
-    print (start + "Starting!")
+    print(start + "Caution: This may take a very long time to complete, Depending on your music library size.")
+    print(start + "Warning: This script does not support individual songs. It downloads the entire album that each of your songs are a part of.")
+    print(start + "Waiting...")
+    print(start + "Starting!")
+
+    t = open('all.csv')
+    row_count = sum(1 for row in t)
 
     f = open('all.csv')
-
     csv_f = csv.reader(f)
     if 'f' in locals():
-        print (start + "Starting Up!")
+        print(start + "Starting Up!")
     else:
-        print (error + "Error. Failed to start up.")
+        print(error + "Error. Failed to start up.")
 
-    for row in csv_f:
-        print (start + "#####################################")
-        print (start + "Getting info from file.")
+    for count, row in enumerate(csv_f):
+        print(start + "#####################################")
+        print(start + "Getting info from file.")
+        song = row[1]
         artist = row[2]
         albumname = row[3]
+        print ("Song Number %s of %s" % (count,row_count))
         if 'artist' in locals():
-            print (start + "Successfully retreived artist from file.")
+            print(start + "Successfully retreived artist from file.")
         else:
-            print (error + "Failed to read file.")
+            print(error + "Failed to read file.")
 
         if 'albumname' in locals():
-            print (start + "Successfully retreived album from file.")
+            print(start + "Successfully retreived album from file.")
         else:
-            print (error + "Failed to read file.")
-        print (start + "Return:", artist, "-", albumname)
+            print(error + "Failed to read file.")
+        print(start + "Return:", artist, "-", albumname)
         payload = {'cmd': 'findAlbum', 'name': '%s - %s' % (albumname, artist)}
 
-        r = requests.get('http://' + host + '/api?apikey=' + apikey, params=payload)
+        r = requests.get('http://' + host + '/api?apikey=' +
+                         apikey, params=payload)
+        print(r.url)
         status = r.status_code
         if status == 200:
-            print (start + "Successfully got JSON!")
+            print(start + "Successfully got JSON!")
         else:
-            print (warning + r.status_code)
-        print (start + "Commencing Musicbrainz search!")
+            print(warning + r.status_code)
+        print(start + "Commencing Musicbrainz search!")
         json_obj = r.text
         readable_json = json.loads(json_obj)
         for i in readable_json:
@@ -110,17 +107,20 @@ else:
                 matchFoundAlbumID = i['albumid']
                 searchStatus = "resultFound"
 
-                print (success + "Found matching album:", matchFoundTitle)
-                print (start + "Got relating Album ID for",matchFoundTitle,":",matchFoundAlbumID)
-                print (start + "Adding album to Headphones...")
-                payload2 = {'cmd': 'addAlbum', 'id': '%s' % (matchFoundAlbumID)}
+                print(success + "Found matching album:", matchFoundTitle)
+                print(start + "Got relating Album ID for",
+                      matchFoundTitle, ":", matchFoundAlbumID)
+                print(start + "Adding album to Headphones...")
+                payload2 = {'cmd': 'addAlbum',
+                            'id': '%s' % (matchFoundAlbumID)}
 
-                r = requests.get('http://' + host + '/api?apikey=' + apikey, params=payload2)
+                r = requests.get('http://' + host +
+                                 '/api?apikey=' + apikey, params=payload2)
                 status = r.status_code
                 if status == 200:
-                    print (success + 'Successfully added album to "Wanted"!')
+                    print(success + 'Successfully added album to "Wanted"!')
                 else:
-                    print (warning + r.status_code)
+                    print(warning + r.status_code)
 
                 break
 
@@ -128,8 +128,16 @@ else:
                 searchStatus = "resultNotFound"
 
         if searchStatus == "resultNotFound":
-            print (error + 'Failed to match result with Musicbrainz.')
-
-    print (success + "Finished!! We are done sending things to download!")
+            print(error + 'Failed to match result with Musicbrainz.')
+            failedSongs.append([song,artist,albumname])
+            print ("added to failed song:")
+            print ("Song Name: %s " % (song))
+            print ("Artist Name: %s" % (artist))
+            print ("Album Name: %s" % (albumname))
+    with open("failed_songs-" + time.strftime("%Y%m%d-%H%M%S") + ".csv", "w") as output:
+        writer = csv.writer(output, lineterminator='\n')
+        for val in failedSongs:
+            writer.writerows([val])
+        print(success + "Finished!! We are done sending things to download!")
     exit()
     f.close()
